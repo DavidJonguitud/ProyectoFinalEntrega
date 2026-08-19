@@ -1,0 +1,51 @@
+name: CI
+ 
+on:
+  push:
+    branches:
+      - main
+      - develop
+ 
+  pull_request:
+    branches:
+      - main
+      - develop
+ 
+jobs:
+  test:
+    runs-on: ubuntu-latest
+ 
+    env:
+      DATABASE_URL: 'sqlite:///:memory:'
+      SECRET_KEY: test-secret-key
+      ALGORITHM: HS256
+      ACCESS_TOKEN_EXPIRE_MINUTES: 60
+ 
+      AWS_ACCESS_KEY_ID: dummy
+      AWS_SECRET_ACCESS_KEY: dummy
+      AWS_REGION: us-east-1
+      AWS_BUCKET_NAME: dummy
+ 
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+ 
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+ 
+      - name: Instalar Poetry
+        run: pip install poetry
+ 
+      - name: Instalar dependencias
+        run: poetry install
+ 
+      - name: Ruff Lint
+        run: poetry run ruff check .
+ 
+      - name: Ruff Format
+        run: poetry run ruff format --check .
+ 
+      - name: Ejecutar tests
+        run: poetry run pytest
