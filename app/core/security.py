@@ -1,13 +1,11 @@
-from bcrypt import hashpw, gensalt, checkpw
+from datetime import UTC, datetime, timedelta
+from typing import Any
 
-from datetime import datetime, timedelta, timezone
-from typing import Union, Any
+from bcrypt import checkpw, gensalt, hashpw
+from fastapi.security import OAuth2PasswordBearer
 from jose import jwt
 
 from app.core.config import settings
-
-from fastapi.security import OAuth2PasswordBearer
-
 
 reusable_oauth = OAuth2PasswordBearer(tokenUrl="/login", scheme_name="JWT")
 
@@ -20,11 +18,11 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     return checkpw(plain_password.encode("utf-8"), hashed_password.encode("utf-8"))
 
 
-def create_access_token(subject: Union[str, Any], expires_delta: int = None) -> str:
+def create_access_token(subject: str | Any, expires_delta: int | None = None) -> str:
     if expires_delta is not None:
-        expires_delta = datetime.now(timezone.utc) + expires_delta
+        expires_delta = datetime.now(UTC) + expires_delta
     else:
-        expires_delta = datetime.now(timezone.utc) + timedelta(
+        expires_delta = datetime.now(UTC) + timedelta(
             minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES
         )
 
@@ -33,11 +31,11 @@ def create_access_token(subject: Union[str, Any], expires_delta: int = None) -> 
     return encoded_jwt
 
 
-def create_refresh_token(subject: Union[str, Any], expires_delta: int = None) -> str:
+def create_refresh_token(subject: str | Any, expires_delta: int | None = None) -> str:
     if expires_delta is not None:
-        expires_delta = datetime.now(timezone.utc) + expires_delta
+        expires_delta = datetime.now(UTC) + expires_delta
     else:
-        expires_delta = datetime.now(timezone.utc) + timedelta(
+        expires_delta = datetime.now(UTC) + timedelta(
             minutes=settings.REFRESH_TOKEN_EXPIRE_MINUTES
         )
 
@@ -55,7 +53,7 @@ def decode_user_token(token: str):
 def create_project_invitation_token(
     project_id: int, invited_email: str, expiration_days: int = 2
 ) -> str:
-    expire = datetime.now(timezone.utc) + timedelta(days=expiration_days)
+    expire = datetime.now(UTC) + timedelta(days=expiration_days)
 
     to_encode = {
         "exp": expire,

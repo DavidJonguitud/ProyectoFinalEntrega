@@ -1,5 +1,7 @@
 from abc import ABC, abstractmethod
+
 from fastapi import UploadFile
+
 
 class StorageService(ABC):
     @abstractmethod
@@ -13,5 +15,3 @@ class StorageService(ABC):
     @abstractmethod
     async def get_file_for_download(self, file_path: str):
         pass
-
-    

@@ -1,17 +1,20 @@
 from enum import Enum
 
-from sqlalchemy import Integer, String, Enum as SQLAlchemyEnum, ForeignKey
+from sqlalchemy import Enum as SQLAlchemyEnum
+from sqlalchemy import ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column
-from app.core.database import Base
 
+from app.core.database import Base
 from app.models.base import AuditMixin, IdMixin
+
 
 class DocumentType(str, Enum):
     PDF = "pdf"
     DOCX = "docx"
 
+
 class Document(Base, AuditMixin, IdMixin):
-    __tablename__= "documents"
+    __tablename__ = "documents"
 
     project_id: Mapped[int] = mapped_column(
         ForeignKey("projects.id"),

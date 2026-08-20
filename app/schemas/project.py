@@ -1,11 +1,14 @@
-from pydantic import BaseModel, EmailStr, ConfigDict, Field
-from typing import Optional
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
+
 from app.models.project_access import ProjectRole
 
 
 class ProjectCreate(BaseModel):
-    name: str = Field(..., min_length=1, max_length=100, description="Nombre del proyecto")
-    description: Optional[str] = Field(None, description="Descripción del proyecto")
+    name: str = Field(
+        ..., min_length=1, max_length=100, description="Nombre del proyecto"
+    )
+    description: str | None = Field(None, description="Descripción del proyecto")
+
 
 class ProjectResponse(BaseModel):
     id: int
@@ -14,12 +17,15 @@ class ProjectResponse(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
+
 class ProjectUpdate(BaseModel):
-    name: Optional[str] = Field(None, min_length=1, max_length=100)
-    description: Optional[str] = Field(None, max_length=500)
+    name: str | None = Field(None, min_length=1, max_length=100)
+    description: str | None = Field(None, max_length=500)
+
 
 class ProjectListResponse(BaseModel):
     project_lis: list[ProjectResponse]
+
 
 class ProjectInviteRequest(BaseModel):
     user_invited: EmailStr = Field(..., description="Email of the invited user")

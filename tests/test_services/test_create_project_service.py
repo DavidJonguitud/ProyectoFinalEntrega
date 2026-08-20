@@ -1,18 +1,16 @@
-from unittest.mock import MagicMock, patch, AsyncMock
-import pytest 
-from httpx import AsyncClient
+from unittest.mock import MagicMock
+
+import pytest
 from sqlalchemy.orm import Session
+
 from app.models.project import Project
-from app.models.project_access import ProjectAccess, ProjectRole
-from app.schemas.project_access import ProjectAccessCreate
+from app.models.project_access import ProjectRole
 from app.models.user import User
-import json
-import app.services.project
-from app.services.project import ProjectService
-from app.core.dependencies import get_project_service
 from app.repositories.project import ProjectRepository
 from app.repositories.project_access import ProjectAccessRepository
 from app.schemas.project import ProjectCreate
+from app.schemas.project_access import ProjectAccessCreate
+from app.services.project import ProjectService
 
 pytestmark = pytest.mark.asyncio
 
@@ -49,46 +47,39 @@ pytestmark = pytest.mark.asyncio
 #     assert data["id"] == 99
 #     assert data["name"] == project_payload["name"]
 #     assert data["description"] == project_payload["description"]
-    
 
-    #Crear instancia de project service 
-    #Comprobar la ló
+
+# Crear instancia de project service
+# Comprobar la ló
+
 
 async def test_service_create_project_success():
     test_user = User(
-            id=1,
-            email="bla@bla.com",
-        )
+        id=1,
+        email="bla@bla.com",
+    )
 
     mock_db_project = MagicMock(spec=Session)
-    mock_repo_project = MagicMock(spec=ProjectRepository)   
+    mock_repo_project = MagicMock(spec=ProjectRepository)
     mock_access_repo_project = MagicMock(sepc=ProjectAccessRepository)
 
     service = ProjectService(
         db=mock_db_project,
         project_repo=mock_repo_project,
-        project_access_repo=mock_access_repo_project
+        project_access_repo=mock_access_repo_project,
     )
 
-    project_payload = ProjectCreate(
-        name = "project test",
-        description = "testing project"
-    )
+    project_payload = ProjectCreate(name="project test", description="testing project")
 
     mocked_project = Project(
-        id=12,
-        name=project_payload.name,
-        description=project_payload.description
+        id=12, name=project_payload.name, description=project_payload.description
     )
 
     service.project_repo.get_project_by_name.return_value = None
 
     service.project_repo.create_project.return_value = mocked_project
 
-    result = await service.create_project(
-        project_data=project_payload,
-        owner = test_user
-    )
+    result = await service.create_project(project_data=project_payload, owner=test_user)
 
     assert result.id == 12
     assert result.name == "project test"
@@ -113,42 +104,35 @@ async def test_service_create_project_success():
 
 async def test_service_create_project_already_exists():
 
-    #ARRANGE
-    #Inicializamos mocks y dependencias de la prueba
+    # ARRANGE
+    # Inicializamos mocks y dependencias de la prueba
     test_user = User(
         id=1,
         email="bla@bla.com",
     )
     mock_db_project = MagicMock(spec=Session)
-    mock_repo_project = MagicMock(spec=ProjectRepository)   
+    mock_repo_project = MagicMock(spec=ProjectRepository)
     mock_access_repo_project = MagicMock(sepc=ProjectAccessRepository)
 
     service = ProjectService(
         db=mock_db_project,
         project_repo=mock_repo_project,
-        project_access_repo=mock_access_repo_project
+        project_access_repo=mock_access_repo_project,
     )
 
-    project_payload = ProjectCreate(
-        name = "project test",
-        description = "testing project"
-    )
+    project_payload = ProjectCreate(name="project test", description="testing project")
 
-    existing_project = Project(
-        id=12,
-        name="test service",
-        description="it exists"
-    )
+    existing_project = Project(id=12, name="test service", description="it exists")
 
-    #Act
-    #Ejecutamos el metodo que estamos probando 
+    # Act
+    # Ejecutamos el metodo que estamos probando
     service.project_repo.get_project_by_name.return_value = existing_project
 
     with pytest.raises(ValueError) as exc_info:
         await service.create_project(project_payload, test_user)
 
-    #Assert
-    #Verificamos que el retorno del servicio sea el que esperamos 
+    # Assert
+    # Verificamos que el retorno del servicio sea el que esperamos
     assert str(exc_info.value) == "A project with that name already exists"
 
     mock_repo_project.create_project.assert_not_called()
