@@ -1,10 +1,10 @@
 import io
-import pytest
-from fastapi import UploadFile
-from botocore.exceptions import ClientError
-import logging
 
-from app.core.config import Settings, settings
+import pytest
+from botocore.exceptions import ClientError
+from fastapi import UploadFile
+
+from app.core.config import Settings
 from app.core.storage.s3 import S3StorageStrategy
 
 pytestmark = pytest.mark.asyncio
@@ -25,7 +25,7 @@ async def test_s3_upload_file_success(mock_s3_env, monkeypatch):
     upload_file = UploadFile(
         filename=file_name,
         file=io.BytesIO(file_content),
-        headers={"content-type": "application/pdf"}
+        headers={"content-type": "application/pdf"},
     )
 
     s3_key = await strategy.upload_file(file=upload_file, folder=TEST_FOLDER)
@@ -51,15 +51,16 @@ async def test_s3_delete_file_success(mock_s3_env, monkeypatch):
         Bucket=TEST_BUCKET,
         Key=s3_key,
         Body=b"contenido temporal",
-        ContentType="application/pdf"
+        ContentType="application/pdf",
     )
 
     try:
         pre_check = s3_client.head_object(Bucket=TEST_BUCKET, Key=s3_key)
         assert pre_check is not None
     except ClientError:
-        pytest.fail("El archivo de pruebas no pudo ser creado inicialmente en S3 simulado.")
-
+        pytest.fail(
+            "El archivo de pruebas no pudo ser creado inicialmente en S3 simulado."
+        )
 
     await strategy.delete_file(s3_key=s3_key)
 
@@ -90,7 +91,7 @@ async def test_s3_get_file_for_download_success(mock_s3_env, monkeypatch):
         Bucket=TEST_BUCKET,
         Key=s3_key,
         Body=b"contenido descarga",
-        ContentType="application/pdf"
+        ContentType="application/pdf",
     )
 
     presigned_url = await strategy.get_file_for_download(s3_key=s3_key, expires_in=1800)

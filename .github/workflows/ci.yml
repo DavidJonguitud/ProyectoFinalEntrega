@@ -2,21 +2,31 @@ name: CI
  
 on:
   push:
-    branches:
-      - main
-      - develop
- 
+    branches: [ main, develop ]
   pull_request:
-    branches:
-      - main
-      - develop
+    branches: [ main, develop ]
  
 jobs:
   test:
     runs-on: ubuntu-latest
- 
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: dummy_user
+          POSTGRES_PASSWORD: dummy_password
+          POSTGRES_DB: dummy_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     env:
-      DATABASE_URL: 'sqlite:///:memory:'
+      DATABASE_URL: 'postgresql://dummy_user:dummy_password@localhost:5432/dummy_db'
       SECRET_KEY: test-secret-key
       ALGORITHM: HS256
       ACCESS_TOKEN_EXPIRE_MINUTES: 60
@@ -26,6 +36,14 @@ jobs:
       AWS_REGION: us-east-1
       AWS_BUCKET_NAME: dummy
  
+      DB_USER: dummy_user
+      DB_PASSWORD: dummy_password
+      DB_HOST: localhost
+      DB_NAME: dummy_db
+      JWT_SECRET_KEY: test-jwt-secret-key-very-long-and-secure-12345
+      JWT_REFRESH_SECRET_KEY: test-jwt-refresh-secret-key-very-long-and-secure-12345
+      STORAGE_STRATEGY: local
+
     steps:
       - name: Checkout código
         uses: actions/checkout@v4
@@ -33,7 +51,7 @@ jobs:
       - name: Configurar Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: "3.13"
  
       - name: Instalar Poetry
         run: pip install poetry
