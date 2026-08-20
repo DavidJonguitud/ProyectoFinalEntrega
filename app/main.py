@@ -17,11 +17,15 @@ from app.core.database import create_database_if_not_exists
 from app.routers.documents import document_router
 from app.routers.project import project_router
 from app.routers.user import user_router
+from app.core.config import settings
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     create_database_if_not_exists()
+    print("\n" + "="*50)
+    print(f"ESTRATEGIA DE ALMACENAMIENTO ACTIVA: {settings.STORAGE_STRATEGY}")
+    print("="*50 + "\n")
 
     alembic_cfg = Config("alembic.ini")
     command.upgrade(alembic_cfg, "head")
