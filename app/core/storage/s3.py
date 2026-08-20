@@ -2,13 +2,19 @@ import asyncio
 import logging
 import uuid
 
+import boto3
+from botocore.config import Config
 from botocore.exceptions import ClientError
 from fastapi import UploadFile
 
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
-
+s3_signature_config = Config(
+    signature_version='s3v4',  
+    retries={'max_attempts': 3},
+    s3={'addressing_style': 'virtual'}  
+)
 
 class S3StorageStrategy:
     def __init__(
@@ -17,25 +23,38 @@ class S3StorageStrategy:
         # asignacion directa
     ):
         self.bucket_name = bucket_name
-        self.s3_client = settings.s3_client
+        self.s3_client_inst = self.s3_client()
+
+    def s3_client(self):
+            if not settings.AWS_ACCESS_KEY_ID or not settings.AWS_SECRET_ACCESS_KEY:
+                raise ValueError("S3 Credentials are not configured. Check your .env file.")
+    
+            return boto3.client(
+                "s3",
+                aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
+                aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
+                region_name="us-east-2",
+                config=s3_signature_config
+            )
 
     async def upload_file(self, file: UploadFile, folder: str) -> str:
-        unique_filename = f"{uuid.uuid4()}_{file.filename}"
-        s3_key = f"{folder}/{unique_filename}" if folder else unique_filename
+        file_ext = file.filename.split(".")[-1].lower() if "." in file.filename else ""
+        unique_filename = f"{uuid.uuid4()}.{file_ext}"
+        s3_path = f"{folder}/{unique_filename}" if folder else unique_filename
         # cambiar nombre de variable
         try:
             await file.seek(0)
             content = await file.read()
 
             await asyncio.to_thread(
-                self.s3_client.put_object,
+                self.s3_client_inst.put_object,
                 Bucket=self.bucket_name,
-                Key=s3_key,
+                Key=s3_path,
                 Body=content,
                 ContentType=file.content_type,
             )
             logger.info(
-                f"File succesfully uploaded to S3: s3://{self.bucket_name}/{s3_key}"
+                f"File succesfully uploaded to S3: s3://{self.bucket_name}/{s3_path}"
             )
         # estudiar como aplicamos los patrones, strategy, repository
 
@@ -46,41 +65,41 @@ class S3StorageStrategy:
         finally:
             await file.close()
 
-        return s3_key
+        return s3_path
 
-    async def delete_file(self, s3_key: str) -> None:
+    async def delete_file(self, s3_path: str) -> None:
         try:
             await asyncio.to_thread(
-                self.s3_client.head_object, Bucket=self.bucket_name, Key=s3_key
+                self.s3_client_inst.head_object, Bucket=self.bucket_name, Key=s3_path
             )
 
             await asyncio.to_thread(
-                self.s3_client.delete_object, Bucket=self.bucket_name, Key=s3_key
+                self.s3_client_inst.delete_object, Bucket=self.bucket_name, Key=s3_path
             )
             logger.info(
-                f"File successfully deleted from S3: s3://{self.bucket_name}/{s3_key}"
+                f"File successfully deleted from S3: s3://{self.bucket_name}/{s3_path}"
             )
 
         except ClientError as e:
             error_code = e.response.get("Error", {}).get("Code")
             if error_code == "404":
                 logger.warning(
-                    f"File to delete does not exist in S3: s3://{self.bucket_name}/{s3_key}"
+                    f"File to delete does not exist in S3: s3://{self.bucket_name}/{s3_path}"
                 )
             else:
                 logger.exception("Error deleting file from S3")
                 raise OSError(f"Error deleting file from S3L {e!s}")
 
-    async def get_file_for_download(self, s3_key: str, expires_in: int = 3600) -> str:
+    async def get_file_for_download(self, s3_path: str, expires_in: int = 3600) -> str:
         try:
             await asyncio.to_thread(
-                self.s3_client.head_object, Bucket=self.bucket_name, Key=s3_key
+                self.s3_client_inst.head_object, Bucket=self.bucket_name, Key=s3_path
             )
 
             presigned_url = await asyncio.to_thread(
-                self.s3_client.generate_presigned_url,
+                self.s3_client_inst.generate_presigned_url,
                 ClientMethod="get_object",
-                Params={"Bucket": self.bucket_name, "Key": s3_key},
+                Params={"Bucket": self.bucket_name, "Key": s3_path},
                 ExpiresIn=expires_in,
             )
             return presigned_url
@@ -89,7 +108,7 @@ class S3StorageStrategy:
             error_code = e.response.get("Error", {}).get("Code")
             if error_code == "404":
                 raise FileNotFoundError(
-                    f"The physical file was not found in S3 bucket: {s3_key}"
+                    f"The physical file was not found in S3 bucket: {s3_path}"
                 )
             else:
                 logger.exception("Error generating download URL")

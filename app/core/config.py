@@ -1,7 +1,6 @@
 import os
 from functools import lru_cache
 
-import boto3
 from pydantic_settings import BaseSettings
 
 
@@ -26,7 +25,7 @@ class Settings(BaseSettings):
 
     AWS_ACCESS_KEY_ID: str | None = None
     AWS_SECRET_ACCESS_KEY: str | None = None
-    AWS_DEFAULT_REGION: str = "us-east-1"
+    AWS_DEFAULT_REGION: str = "us-east-2"
 
     AWS_S3_BUCKET_NAME: str | None = None
 
@@ -39,17 +38,8 @@ class Settings(BaseSettings):
             f"@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
         )
 
-    @property
-    def s3_client(self):
-        if not self.AWS_ACCESS_KEY_ID or not self.AWS_SECRET_ACCESS_KEY:
-            raise ValueError("S3 Credentials are not configured. Check your .env file.")
 
-        return boto3.client(
-            "s3",
-            aws_access_key_id=self.AWS_ACCESS_KEY_ID,
-            aws_secret_access_key=self.AWS_SECRET_ACCESS_KEY,
-            region_name=self.AWS_DEFAULT_REGION,
-        )
+    
 
     # El settings solo deberia tener settings, mover la inicializacion del client
     # Debemos dejarlo en la clase encargada

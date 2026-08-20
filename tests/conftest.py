@@ -11,7 +11,7 @@ from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
-from app.core.config import Settings, settings
+from app.core.config import settings
 from app.core.database import Base, get_db
 from app.core.security import create_access_token, hash_password
 from app.main import app
@@ -120,16 +120,16 @@ async def auth_headers(test_user: User) -> dict:
 def aws_credentials():
     os.environ["AWS_ACCESS_KEY_ID"] = "testing"
     os.environ["AWS_SECRET_ACCESS_KEY"] = "testing"
-    os.environ["AWS_DEFAULT_REGION"] = "us-east-1"
+    os.environ["AWS_DEFAULT_REGION"] = "us-east-2"
 
 
 @pytest.fixture
 def mock_s3_env(monkeypatch):
     with mock_aws():
-        mocked_client = boto3.client("s3", region_name="us-east-1")
-
-        mocked_client.create_bucket(Bucket="test-project-bucket-ficticio")
-
-        monkeypatch.setattr(Settings, "s3_client", mocked_client)
-
-        yield mocked_client
+        s3 = boto3.client("s3", region_name="us-east-2")
+        s3.create_bucket(
+            Bucket="test-project-bucket-ficticio",
+            CreateBucketConfiguration={
+                "LocationConstraint": "us-east-2"
+            })
+        yield s3
