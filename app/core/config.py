@@ -38,9 +38,6 @@ class Settings(BaseSettings):
             f"@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
         )
 
-
-    
-
     # El settings solo deberia tener settings, mover la inicializacion del client
     # Debemos dejarlo en la clase encargada
 

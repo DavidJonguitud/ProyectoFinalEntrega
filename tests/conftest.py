@@ -129,7 +129,6 @@ def mock_s3_env(monkeypatch):
         s3 = boto3.client("s3", region_name="us-east-2")
         s3.create_bucket(
             Bucket="test-project-bucket-ficticio",
-            CreateBucketConfiguration={
-                "LocationConstraint": "us-east-2"
-            })
+            CreateBucketConfiguration={"LocationConstraint": "us-east-2"},
+        )
         yield s3

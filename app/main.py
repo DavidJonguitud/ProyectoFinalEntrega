@@ -23,9 +23,9 @@ from app.routers.user import user_router
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     create_database_if_not_exists()
-    print("\n" + "="*50)
+    print("\n" + "=" * 50)
     print(f"ESTRATEGIA DE ALMACENAMIENTO ACTIVA: {settings.STORAGE_STRATEGY}")
-    print("="*50 + "\n")
+    print("=" * 50 + "\n")
 
     alembic_cfg = Config("alembic.ini")
     command.upgrade(alembic_cfg, "head")

@@ -13,13 +13,12 @@ TEST_BUCKET = "test-project-bucket-ficticio"
 TEST_FOLDER = "project_99"
 
 
-
 async def test_s3_delete_file_success(mock_s3_env):
     s3_client = mock_s3_env
 
     with patch("app.core.storage.s3.boto3.client", return_value=s3_client):
         strategy = S3StorageStrategy(bucket_name=TEST_BUCKET)
-        
+
     s3_path = f"{TEST_FOLDER}/archivo_para_borrar.pdf"
 
     s3_client.put_object(
@@ -50,7 +49,7 @@ async def test_s3_delete_file_not_found_does_not_raise_error(mock_s3_env):
 
     with patch("app.core.storage.s3.boto3.client", return_value=s3_client):
         strategy = S3StorageStrategy(bucket_name=TEST_BUCKET)
-        
+
     non_existent_key = "project_99/no_existo.pdf"
 
     await strategy.delete_file(s3_path=non_existent_key)
@@ -61,7 +60,7 @@ async def test_s3_get_file_for_download_success(mock_s3_env):
 
     with patch("app.core.storage.s3.boto3.client", return_value=s3_client):
         strategy = S3StorageStrategy(bucket_name=TEST_BUCKET)
-        
+
     s3_path = f"{TEST_FOLDER}/archivo_desgarga.pdf"
 
     s3_client.put_object(
@@ -71,7 +70,9 @@ async def test_s3_get_file_for_download_success(mock_s3_env):
         ContentType="application/pdf",
     )
 
-    presigned_url = await strategy.get_file_for_download(s3_path=s3_path, expires_in=1800)
+    presigned_url = await strategy.get_file_for_download(
+        s3_path=s3_path, expires_in=1800
+    )
 
     assert presigned_url is not None
     assert f"https://{TEST_BUCKET}.s3.amazonaws.com/{s3_path}" in presigned_url
@@ -83,13 +84,14 @@ async def test_s3_get_file_for_download_not_found(mock_s3_env):
 
     with patch("app.core.storage.s3.boto3.client", return_value=s3_client):
         strategy = S3StorageStrategy(bucket_name=TEST_BUCKET)
-        
+
     non_existent_key = "project_99/no_existe.pdf"
 
     with pytest.raises(FileNotFoundError) as exc_info:
         await strategy.get_file_for_download(s3_path=non_existent_key)
 
     assert "was not found in S3 bucket" in str(exc_info.value)
+
 
 async def test_s3_upload_file_success(mock_s3_env):
     s3_client = mock_s3_env

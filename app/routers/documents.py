@@ -38,10 +38,7 @@ async def download_document(
             document_id=document_id, current_user=current_user
         )
         if file_source.startswith(("http://", "https://")):
-            return {
-                "file_name": original_filename,
-                "download_url": file_source
-            }
+            return {"file_name": original_filename, "download_url": file_source}
 
         mime_type, _ = mimetypes.guess_type(original_filename)
         if not mime_type:

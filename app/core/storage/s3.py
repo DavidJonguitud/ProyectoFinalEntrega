@@ -11,10 +11,11 @@ from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 s3_signature_config = Config(
-    signature_version='s3v4',  
-    retries={'max_attempts': 3},
-    s3={'addressing_style': 'virtual'}  
+    signature_version="s3v4",
+    retries={"max_attempts": 3},
+    s3={"addressing_style": "virtual"},
 )
+
 
 class S3StorageStrategy:
     def __init__(
@@ -26,16 +27,16 @@ class S3StorageStrategy:
         self.s3_client_inst = self.s3_client()
 
     def s3_client(self):
-            if not settings.AWS_ACCESS_KEY_ID or not settings.AWS_SECRET_ACCESS_KEY:
-                raise ValueError("S3 Credentials are not configured. Check your .env file.")
-    
-            return boto3.client(
-                "s3",
-                aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
-                aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
-                region_name="us-east-2",
-                config=s3_signature_config
-            )
+        if not settings.AWS_ACCESS_KEY_ID or not settings.AWS_SECRET_ACCESS_KEY:
+            raise ValueError("S3 Credentials are not configured. Check your .env file.")
+
+        return boto3.client(
+            "s3",
+            aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
+            region_name="us-east-2",
+            config=s3_signature_config,
+        )
 
     async def upload_file(self, file: UploadFile, folder: str) -> str:
         file_ext = file.filename.split(".")[-1].lower() if "." in file.filename else ""
