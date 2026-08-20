@@ -1,4 +1,5 @@
-from pydantic import BaseModel, EmailStr, model_validator, ConfigDict
+from pydantic import BaseModel, ConfigDict, EmailStr, model_validator
+
 
 class UserCreate(BaseModel):
     email: EmailStr
@@ -11,21 +12,25 @@ class UserCreate(BaseModel):
             raise ValueError("Passwords do not match")
         return self
 
+
 class UserResponse(BaseModel):
     id: int
     email: str
 
     model_config = ConfigDict(from_attributes=True)
 
+
 class UserLogin(BaseModel):
     email: EmailStr
     password: str
+
 
 class TokenResponse(BaseModel):
     access_token: str
     refresh_token: str
     token_type: str = "bearer"
     user: UserResponse
+
 
 class TokenPayload(BaseModel):
     sub: str

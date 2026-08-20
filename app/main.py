@@ -1,24 +1,23 @@
 import logging
-import traceback
 
+logger = logging.getLogger(__name__)
 
 logging.basicConfig(
-    level=logging.DEBUG,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    level=logging.DEBUG, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 
 from contextlib import asynccontextmanager
 
-from fastapi.responses import JSONResponse
-from fastapi import FastAPI, Request
 from alembic.config import Config
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
+
 from alembic import command
-
 from app.core.database import create_database_if_not_exists
-
-from app.routers.user import user_router
-from app.routers.project import project_router
 from app.routers.documents import document_router
+from app.routers.project import project_router
+from app.routers.user import user_router
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -32,6 +31,7 @@ async def lifespan(app: FastAPI):
 
     print("Application shutdown complete.")
 
+
 def create_app() -> FastAPI:
     app = FastAPI(lifespan=lifespan)
 
@@ -40,18 +40,18 @@ def create_app() -> FastAPI:
     app.include_router(document_router)
     return app
 
+
 app = create_app()
+
 
 @app.middleware("http")
 async def catch_exceptions_middleware(request: Request, call_next):
     try:
         return await call_next(request)
-    except Exception as exc:
-        print("\n" + "="*50)
-        print("Server error")
-        traceback.print_exc()
-        print("="*50 + "\n")
+    except Exception:
+        logger.exception("Server error occurred during request processing")
+
         return JSONResponse(
             status_code=500,
-            content={"detail": str(exc), "type": type(exc).__name__}
+            content={"detail": "Internal server error. Please try again later."},
         )

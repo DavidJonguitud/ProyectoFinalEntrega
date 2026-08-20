@@ -1,15 +1,16 @@
 import logging
+
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
-from app.repositories.project import ProjectRepository
-from app.schemas.project import ProjectCreate, ProjectUpdate
+from app.exceptions import DatabaseTransactionError
 from app.models.project import Project
-
-from app.repositories.project_access import ProjectAccessRepository
 from app.models.project_access import ProjectRole
-from app.schemas.project_access import ProjectAccessCreate
-
 from app.models.user import User
+from app.repositories.project import ProjectRepository
+from app.repositories.project_access import ProjectAccessRepository
+from app.schemas.project import ProjectCreate, ProjectUpdate
+from app.schemas.project_access import ProjectAccessCreate
 
 logger = logging.getLogger(__name__)
 
@@ -55,10 +56,12 @@ class ProjectService:
             )
             return project
 
-        except Exception as e:
+        except SQLAlchemyError as e:
             self.db.rollback()
             logger.error(f"Transaction failed, rolling back changes. Error: {e}")
-            raise Exception(f"Could not create project and assign owner: {e}")
+            raise DatabaseTransactionError(
+                f"Could not create project and assign owner: {e}"
+            )
 
     async def update_project_for_authorized_user(
         self, project_id: int, update_data: ProjectUpdate, user: User

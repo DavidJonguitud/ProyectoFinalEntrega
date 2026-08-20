@@ -1,18 +1,22 @@
 from enum import Enum
 
-from sqlalchemy import (Integer, Enum as SQLAlchemyEnum, ForeignKey, UniqueConstraint)
+from sqlalchemy import Enum as SQLAlchemyEnum
+from sqlalchemy import ForeignKey, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
+
 from app.core.database import Base
 from app.models.base import AuditMixin, IdMixin
+
 
 class ProjectRole(str, Enum):
     OWNER = "owner"
     MEMBER = "member"
 
+
 class ProjectAccess(Base, AuditMixin, IdMixin):
     __tablename__ = "project_access"
 
-    __table_args__= (
+    __table_args__ = (
         UniqueConstraint(
             "project_id",
             "email",
@@ -31,7 +35,7 @@ class ProjectAccess(Base, AuditMixin, IdMixin):
     )
 
     role: Mapped[ProjectRole] = mapped_column(
-        SQLAlchemyEnum(ProjectRole), 
+        SQLAlchemyEnum(ProjectRole),
         nullable=False,
     )
 
@@ -39,5 +43,3 @@ class ProjectAccess(Base, AuditMixin, IdMixin):
         ForeignKey("users.email"),
         nullable=True,
     )
-
-

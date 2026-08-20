@@ -1,25 +1,23 @@
-from fastapi import APIRouter, Depends, status, HTTPException, UploadFile, File
-from app.models.user import User
+import logging
+from typing import Annotated
 
-from app.schemas.project import (
-    ProjectCreate,
-    ProjectResponse,
-    ProjectUpdate,
-    ProjectInviteRequest,
-)
-from app.services.project import ProjectService
-
-from app.schemas.document import DocumentResponse
-from app.services.document import DocumentService
-
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 
 from app.core.dependencies import (
     get_current_user,
-    get_project_service,
     get_document_service,
+    get_project_service,
 )
-
-import logging
+from app.models.user import User
+from app.schemas.document import DocumentResponse
+from app.schemas.project import (
+    ProjectCreate,
+    ProjectInviteRequest,
+    ProjectResponse,
+    ProjectUpdate,
+)
+from app.services.document import DocumentService
+from app.services.project import ProjectService
 
 logger = logging.getLogger(__name__)
 
@@ -40,16 +38,18 @@ project_router = APIRouter(tags=["projects"])
 )
 async def create_project(
     project_data: ProjectCreate,
-    project_service: ProjectService = Depends(get_project_service),
-    current_user: User = Depends(get_current_user),
+    project_service: Annotated[ProjectService, Depends(get_project_service)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     try:
         return await project_service.create_project(project_data, current_user)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        logger.error(f"Unexpected error {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception:
+        logger.exception("Unexpected error occurred while processing user request")
+        raise HTTPException(
+            status_code=500, detail="Internal server error. Please try again later."
+        )
 
 
 # # GET /projects - Get all projects, accessible for a user. Returns list of projects full info(details + documents).
@@ -62,18 +62,19 @@ async def create_project(
 
 @project_router.get("/projects", status_code=status.HTTP_200_OK)
 async def show_projects(
-    current_user: User = Depends(get_current_user),
-    project_service: ProjectService = Depends(get_project_service),
+    current_user: Annotated[User, Depends(get_current_user)],
+    project_service: Annotated[ProjectService, Depends(get_project_service)],
 ):
     try:
         return await project_service.get_projects_by_user(current_user)
 
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        logger.error(f"Unexpected error {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
+    except Exception:
+        logger.exception("Unexpected error occurred while processing user request")
+        raise HTTPException(
+            status_code=500, detail="Internal server error. Please try again later."
+        )
     # TODO ADD DOCUMENT RELATIONS
 
 
@@ -90,8 +91,8 @@ async def show_projects(
 )
 async def show_project_details(
     project_id: int,
-    current_user: User = Depends(get_current_user),
-    project_service: ProjectService = Depends(get_project_service),
+    current_user: Annotated[User, Depends(get_current_user)],
+    project_service: Annotated[ProjectService, Depends(get_project_service)],
 ):
     try:
         return await project_service.get_project_by_id_for_authorized_user(
@@ -99,9 +100,11 @@ async def show_project_details(
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        logger.error(f"Unexpected error {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception:
+        logger.exception("Unexpected error occurred while processing user request")
+        raise HTTPException(
+            status_code=500, detail="Internal server error. Please try again later."
+        )
 
 
 # # PUT /project/<project_id>/info - Update projects details - name, description. Returns the updated project’s info
@@ -118,8 +121,8 @@ async def show_project_details(
 async def update_project_info(
     project_id: int,
     project_data: ProjectUpdate,
-    current_user: User = Depends(get_current_user),
-    project_service: ProjectService = Depends(get_project_service),
+    current_user: Annotated[User, Depends(get_current_user)],
+    project_service: Annotated[ProjectService, Depends(get_project_service)],
 ):
     try:
         return await project_service.update_project_for_authorized_user(
@@ -132,13 +135,10 @@ async def update_project_info(
     except PermissionError as e:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
 
-    except Exception as e:
-        logger.error(
-            f"Unexpected error updating project {project_id}: {e}", exc_info=True
-        )
+    except Exception:
+        logger.exception("Unexpected error occurred while processing user request")
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="An unexpected error occurred while updating the project.",
+            status_code=500, detail="Internal server error. Please try again later."
         )
 
 
@@ -151,8 +151,8 @@ async def update_project_info(
 @project_router.delete("/project/{project_id}", status_code=status.HTTP_200_OK)
 async def delete_project(
     project_id: int,
-    project_service: ProjectService = Depends(get_project_service),
-    current_user: User = Depends(get_current_user),
+    project_service: Annotated[ProjectService, Depends(get_project_service)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     try:
         await project_service.delete_project_for_authorized_owner(
@@ -166,13 +166,10 @@ async def delete_project(
     except PermissionError as e:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
 
-    except Exception as e:
-        logger.error(
-            f"Unexpected error deleting project {project_id}: {e}", exc_info=True
-        )
+    except Exception:
+        logger.exception("Unexpected error occurred while processing user request")
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="An unexpected error occurred while trying to delete the project.",
+            status_code=500, detail="Internal server error. Please try again later."
         )
 
 
@@ -191,8 +188,8 @@ async def delete_project(
 )
 async def get_project_documents(
     project_id: int,
-    document_service: DocumentService = Depends(get_document_service),
-    current_user: User = Depends(get_current_user),
+    document_service: Annotated[DocumentService, Depends(get_document_service)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     try:
         return await document_service.get_project_documents(
@@ -204,13 +201,10 @@ async def get_project_documents(
     except PermissionError as e:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
 
-    except Exception as e:
-        logger.error(
-            f"Error fetching documents for project {project_id}: {e}", exc_info=True
-        )
+    except Exception:
+        logger.exception("Unexpected error occurred while processing user request")
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="An error occurred while fetching the documents.",
+            status_code=500, detail="Internal server error. Please try again later."
         )
 
 
@@ -229,9 +223,9 @@ async def get_project_documents(
 )
 async def upload_project_documents(
     project_id: int,
-    file: UploadFile = File(..., description="File to upload"),
-    document_service: DocumentService = Depends(get_document_service),
-    current_user: User = Depends(get_current_user),
+    document_service: Annotated[DocumentService, Depends(get_document_service)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    file: Annotated[UploadFile, File(..., description="File to upload")],
 ):
     try:
         return await document_service.upload_document_for_project(
@@ -243,11 +237,10 @@ async def upload_project_documents(
     except PermissionError as e:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
 
-    except Exception as e:
-        logger.error(f"Error uploading document: {e}", exc_info=True)
+    except Exception:
+        logger.exception("Unexpected error occurred while processing user request")
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="An error occurred while uploading the document.",
+            status_code=500, detail="Internal server error. Please try again later."
         )
 
 
@@ -262,8 +255,8 @@ async def upload_project_documents(
 async def invite_user_to_project(
     project_id: int,
     invite_data: ProjectInviteRequest,
-    project_service: ProjectService = Depends(get_project_service),
-    current_user: User = Depends(get_current_user),
+    project_service: Annotated[ProjectService, Depends(get_project_service)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
     try:
         return await project_service.invite_user_to_project(
@@ -278,11 +271,10 @@ async def invite_user_to_project(
     except PermissionError as e:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
 
-    except Exception as e:
-        logger.error(f"Error uploading document: {e}", exc_info=True)
+    except Exception:
+        logger.exception("Unexpected error occurred while processing user request")
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="An error occurred while inviting the user.",
+            status_code=500, detail="Internal server error. Please try again later."
         )
 
 
@@ -316,4 +308,3 @@ async def invite_user_to_project(
 #         )
 # changes to test precommit
 # changes to test pr to develop
-

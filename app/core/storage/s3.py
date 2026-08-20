@@ -1,8 +1,10 @@
-import uuid
-import logging
 import asyncio
-from fastapi import UploadFile
+import logging
+import uuid
+
 from botocore.exceptions import ClientError
+from fastapi import UploadFile
+
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
@@ -38,8 +40,8 @@ class S3StorageStrategy:
         # estudiar como aplicamos los patrones, strategy, repository
 
         except ClientError as e:
-            logger.error(f"Failed to upload file to S3: {str(e)}", exc_info=True)
-            raise IOError(f"Failed to upload file to S3: {str(e)}")
+            logger.exception("Failed to upload file to S3:")
+            raise OSError(f"Failed to upload file to S3: {e!s}")
 
         finally:
             await file.close()
@@ -66,10 +68,8 @@ class S3StorageStrategy:
                     f"File to delete does not exist in S3: s3://{self.bucket_name}/{s3_key}"
                 )
             else:
-                logger.error(
-                    f"Error deleting file from S3: {s3_key}: {e}", exc_info=True
-                )
-                raise IOError(f"Error deleting file from S3L {str(e)}")
+                logger.exception("Error deleting file from S3")
+                raise OSError(f"Error deleting file from S3L {e!s}")
 
     async def get_file_for_download(self, s3_key: str, expires_in: int = 3600) -> str:
         try:
@@ -92,7 +92,5 @@ class S3StorageStrategy:
                     f"The physical file was not found in S3 bucket: {s3_key}"
                 )
             else:
-                logger.error(
-                    f"Error generating download URL for {s3_key}:{e}", exc_info=True
-                )
-                raise IOError(f"Could not retrieve file download URL: {str(e)}")
+                logger.exception("Error generating download URL")
+                raise OSError(f"Could not retrieve file download URL: {e!s}")

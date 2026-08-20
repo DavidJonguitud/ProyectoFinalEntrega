@@ -41,8 +41,8 @@ jobs:
       - name: Instalar dependencias
         run: poetry install
  
-      # - name: Ruff Lint
-      #   run: poetry run ruff check .
+      - name: Ruff Lint
+        run: poetry run ruff check .
  
       - name: Ruff Format
         run: poetry run ruff format --check .

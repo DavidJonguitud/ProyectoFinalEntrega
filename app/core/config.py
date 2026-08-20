@@ -1,8 +1,8 @@
-from pydantic_settings import BaseSettings
-from functools import lru_cache
-import boto3
 import os
-from typing import Optional
+from functools import lru_cache
+
+import boto3
+from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
@@ -24,11 +24,11 @@ class Settings(BaseSettings):
     UPLOAD_DIR: str = os.path.join(os.getcwd(), "upload")
     STORAGE_STRATEGY: str
 
-    AWS_ACCESS_KEY_ID: Optional[str] = None
-    AWS_SECRET_ACCESS_KEY: Optional[str] = None
+    AWS_ACCESS_KEY_ID: str | None = None
+    AWS_SECRET_ACCESS_KEY: str | None = None
     AWS_DEFAULT_REGION: str = "us-east-1"
 
-    AWS_S3_BUCKET_NAME: Optional[str] = None
+    AWS_S3_BUCKET_NAME: str | None = None
 
     # S3_DESTINATION_BUCKET: Optional[str] = None
 
@@ -60,7 +60,7 @@ class Settings(BaseSettings):
         extra = "ignore"
 
 
-@lru_cache()
+@lru_cache
 def get_settings() -> "Settings":
     return Settings()
 
